@@ -199,18 +199,27 @@ std::vector<std::pair<std::string, std::string>>
 Database::select_docs_by_workspace_and_date(const std::string &workspace,
                                             const std::string &date) {
   sqlite3_stmt *stmt;
-  int rc =
-      sqlite3_prepare_v2(db,
-                         "SELECT id, title FROM docs "
-                         "WHERE workspace = ? AND date = ? ORDER BY time ASC",
-                         -1, &stmt, nullptr);
+  int rc;
+  if (!date.empty()) {
+    rc =
+        sqlite3_prepare_v2(db,
+                           "SELECT id, title FROM docs "
+                           "WHERE workspace = ? AND date = ? ORDER BY time ASC",
+                           -1, &stmt, nullptr);
+  } else {
+    rc = sqlite3_prepare_v2(db,
+                            "SELECT id, title FROM docs "
+                            "WHERE workspace = ? ORDER BY time ASC",
+                            -1, &stmt, nullptr);
+  }
   if (rc != SQLITE_OK) {
     throw std::runtime_error("Failed to prepare statement: " +
                              std::string(sqlite3_errmsg(db)));
   }
 
   sqlite3_bind_text(stmt, 1, workspace.c_str(), -1, SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 2, date.c_str(), -1, SQLITE_TRANSIENT);
+  if (!date.empty())
+    sqlite3_bind_text(stmt, 2, date.c_str(), -1, SQLITE_TRANSIENT);
 
   std::vector<std::pair<std::string, std::string>> results;
 
