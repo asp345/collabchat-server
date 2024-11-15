@@ -52,7 +52,7 @@ void http_connection::router() {
     if (request_.method() == http::verb::post &&
         request_.target() == "/login") {
       auto token =
-          db->login(request_json_obj.at("id").as_string().c_str(),
+          db->login(request_json_obj.at("workspace").as_string().c_str(),
                     request_json_obj.at("password").as_string().c_str());
       if (token != "") {
         response_.set(http::field::content_type, "text/plain");
