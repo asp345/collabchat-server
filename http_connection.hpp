@@ -22,9 +22,6 @@ public:
   void start();
 
 private:
-  // Base64
-  Base64 base64;
-
   // Database
   Database *db;
 

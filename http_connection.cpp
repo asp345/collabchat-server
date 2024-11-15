@@ -6,7 +6,7 @@
 #include <iostream>
 
 http_connection::http_connection(tcp::socket socket, Database *db)
-    : base64(Base64()), db(db), socket_(std::move(socket)) {}
+    : db(db), socket_(std::move(socket)) {}
 
 void http_connection::start() {
   read_request();
@@ -28,10 +28,8 @@ void http_connection::router() {
   response_.version(request_.version());
   response_.keep_alive(false);
   response_.result(http::status::ok);
-  std::cerr << "Processing request : " << request_.target() << '\n';
   auto auth_header = request_.find(http::field::authorization);
   if (auth_header != request_.end()) {
-    std::cerr << "Authorization header: " << auth_header->value() << '\n';
     std::cerr << "Workspace : " << Base64::decode(auth_header->value()) << '\n';
   } else {
     std::cerr << "Authorization header not found\n";
@@ -42,11 +40,12 @@ void http_connection::router() {
   boost::json::value request_json_obj = boost::json::value();
   try {
     body_str = boost::beast::buffers_to_string(request_.body().data());
-    std::cerr << "Body: " << body_str << '\n';
     request_json_obj = boost::json::parse(body_str);
   } catch (std::runtime_error &e) {
     // ignore error
   }
+  std::cerr << request_.method() << '\n' << request_.target() << '\n';
+  std::cerr << body_str << '\n';
 
   try {
     if (request_.method() == http::verb::post &&
