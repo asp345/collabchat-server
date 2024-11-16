@@ -3,7 +3,6 @@
 #include <ctime>
 #include <stdexcept>
 
-Base64 base64;
 std::time_t now() { return std::time(0); }
 
 Database::Database(const std::string &db_name) : db(nullptr) {
@@ -51,7 +50,6 @@ void Database::insert_chat(const std::string &workspace,
     throw std::runtime_error("Failed to execute insert statement: " +
                              std::string(sqlite3_errmsg(db)));
   }
-
   sqlite3_finalize(stmt);
 }
 
@@ -109,7 +107,6 @@ void Database::delete_doc(const std::string &id) {
   }
 
   sqlite3_bind_int64(stmt, 1, long_id);
-
   rc = sqlite3_step(stmt);
   sqlite3_finalize(stmt);
 }
@@ -139,7 +136,6 @@ void Database::upsert_online_users(const std::string workspace,
     throw std::runtime_error("Failed to execute insert statement: " +
                              std::string(sqlite3_errmsg(db)));
   }
-
   sqlite3_finalize(stmt);
 }
 
@@ -158,12 +154,10 @@ Database::select_chats_by_workspace(const std::string &workspace) {
   sqlite3_bind_text(stmt, 1, workspace.c_str(), -1, SQLITE_TRANSIENT);
 
   std::vector<std::string> results;
-
   while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
     results.push_back(std::string(
         reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0))));
   }
-
   sqlite3_finalize(stmt);
   return results;
 }
@@ -175,22 +169,19 @@ Database::select_online_users_by_workspace(const std::string &workspace) {
                               "SELECT user_id FROM online_users WHERE "
                               "workspace = ? AND last_ping >= ?",
                               -1, &stmt, nullptr);
-
   if (rc != SQLITE_OK) {
     throw std::runtime_error("Failed to prepare statement: " +
                              std::string(sqlite3_errmsg(db)));
   }
 
   sqlite3_bind_text(stmt, 1, workspace.c_str(), -1, SQLITE_TRANSIENT);
-  sqlite3_bind_int64(stmt, 2, now() - 300);
+  sqlite3_bind_int64(stmt, 2, now() - 20);
 
   std::vector<std::string> results;
-
   while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
     results.push_back(std::string(
         reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0))));
   }
-
   sqlite3_finalize(stmt);
   return results;
 }
@@ -222,14 +213,12 @@ Database::select_docs_by_workspace_and_date(const std::string &workspace,
     sqlite3_bind_text(stmt, 2, date.c_str(), -1, SQLITE_TRANSIENT);
 
   std::vector<std::pair<std::string, std::string>> results;
-
   while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
     results.push_back({std::string(reinterpret_cast<const char *>(
                            sqlite3_column_text(stmt, 0))),
                        std::string(reinterpret_cast<const char *>(
                            sqlite3_column_text(stmt, 1)))});
   }
-
   sqlite3_finalize(stmt);
   return results;
 }
@@ -246,10 +235,10 @@ std::string Database::login(const std::string &id,
 
   sqlite3_bind_text(stmt, 1, id.c_str(), -1, SQLITE_TRANSIENT);
   if ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-    if (base64.encode(password) ==
+    if (Base64::encode(password) ==
         reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0))) {
       sqlite3_finalize(stmt);
-      return base64.encode(id);
+      return Base64::encode(id);
     } else { // login fail
       sqlite3_finalize(stmt);
       return "";
@@ -263,7 +252,7 @@ std::string Database::login(const std::string &id,
                                std::string(sqlite3_errmsg(db)));
     }
     sqlite3_bind_text(stmt, 1, id.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, base64.encode(password).c_str(), -1,
+    sqlite3_bind_text(stmt, 2, Base64::encode(password).c_str(), -1,
                       SQLITE_TRANSIENT);
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -272,7 +261,7 @@ std::string Database::login(const std::string &id,
                                std::string(sqlite3_errmsg(db)));
     }
     sqlite3_finalize(stmt);
-    return base64.encode(id);
+    return Base64::encode(id);
   }
 }
 
@@ -287,7 +276,6 @@ Database::get_doc_by_id(const std::string &id) {
   }
 
   int64_t long_id = std::stol(id);
-
   sqlite3_bind_int64(stmt, 1, long_id);
 
   if ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {

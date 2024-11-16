@@ -36,7 +36,7 @@ using namespace boost::archive::iterators;
 
 Database db = Database("server.db");
 
-// "Loop" forever accepting new connections.
+// Loop for accepting new connections.
 void http_server(tcp::acceptor &acceptor, tcp::socket &socket) {
   acceptor.async_accept(socket, [&](beast::error_code ec) {
     if (!ec)
@@ -45,7 +45,7 @@ void http_server(tcp::acceptor &acceptor, tcp::socket &socket) {
   });
 }
 
-void initialize_db() {
+void initialize_db() { // Create tables on db file
   try {
     db.execute("CREATE TABLE IF NOT EXISTS docs (id INTEGER PRIMARY KEY, "
                "workspace TEXT, time INTEGER, date TEXT, title "
@@ -71,9 +71,9 @@ int main(int argc, char *argv[]) {
     if (argc != 3) {
       std::cerr << "Usage: " << argv[0] << " <address> <port>\n";
       std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    receiver 0.0.0.0 80\n";
+      std::cerr << "    server 0.0.0.0 80\n";
       std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    receiver 0::0 80\n";
+      std::cerr << "    server 0::0 80\n";
       return EXIT_FAILURE;
     }
 
